@@ -1,6 +1,6 @@
-#include <iostream>
 #include <getopt.h>
 #include <string>
+#include "image.hpp"
 
 int main(int argc, char *argv[]){
   // Options
@@ -8,7 +8,6 @@ int main(int argc, char *argv[]){
   std::string textEncode; // Text to encode (--encode)
   std::string outputName; // Text to save file as (--output, default = imageName_mod.*)
   bool decode = false; // Option to decode text
-  bool grayscale = false; // Option for grayscaling image
   
   // Getopt long options
   static struct option long_options[] = {
@@ -16,7 +15,6 @@ int main(int argc, char *argv[]){
     {"output", required_argument, 0, 'o'},
     {"encode", required_argument, 0, 'e'},
     {"decode", no_argument, 0, 'd'},
-    {"grayscale", no_argument, 0, 'g'},
     {"help", no_argument, 0, 'h'},
     {0,0,0,0}
   };
@@ -24,7 +22,7 @@ int main(int argc, char *argv[]){
   // Parse args
   int opt;
   int opt_index = 0;
-  while ((opt = getopt_long(argc, argv, "i:e:o:dgh", long_options, &opt_index)) != -1){
+  while ((opt = getopt_long(argc, argv, "i:e:o:dh", long_options, &opt_index)) != -1){
     switch (opt){
       case 'i':
         imageName = optarg;
@@ -47,9 +45,6 @@ int main(int argc, char *argv[]){
         }
         decode = true;
         break;
-      case 'g':
-        grayscale = true;
-        break;
       case 'h':
       case '?':
       default:
@@ -59,11 +54,12 @@ int main(int argc, char *argv[]){
           "[-o|--output <filename>]:  Image location to write to. (optional)\n"
           "[-e|--encode <text>]:      Set encode mode and text\n"
           "[-d|--decode]:             Set decode mode\n"
-          "[-g|--grayscale]:          Set image to grayscale. (optional)\n"
           "[-h|--help]:               Show program options and help" << std::endl;
         return 1;
     }
   }
+
+  // Check for invalid input
   if (imageName.empty()){
     std::cerr << "Image name was not provided. Exiting." << std::endl;
     return 2;
@@ -72,10 +68,15 @@ int main(int argc, char *argv[]){
     std::cerr << "No mode selected. Exiting." << std::endl;
     return 2;
   }
-  
+  if (outputName.empty()) outputName = "mod_" + imageName;
 
-
-
+  // Parse image
+  ImageStego ciph(imageName);
+  if (decode){
+    ciph.decode();
+  }else{
+    ciph.encode(textEncode, outputName);
+  }
 
 
   return 0;
