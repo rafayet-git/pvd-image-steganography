@@ -26,7 +26,6 @@ int main(int argc, char *argv[]){
     switch (opt){
       case 'i':
         imageName = optarg;
-        // Add filetype check here maybe?
         break;
       case 'o':
         outputName = optarg;
