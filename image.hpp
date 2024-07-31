@@ -13,4 +13,6 @@ public:
 private:
   FIBITMAP *image;
   FREE_IMAGE_FORMAT filetype;
+  const static int diffRange[];
+  const static int bitSize[]; 
 };
