@@ -3,6 +3,8 @@
 #include <FreeImage.h>
 #include <iostream>
 #include <string>
+#include <queue>
+#include <bitset>
 
 class ImageStego{
 public:
@@ -14,5 +16,6 @@ private:
   FIBITMAP *image;
   FREE_IMAGE_FORMAT filetype;
   const static int diffRange[];
-  const static int bitSize[]; 
+  const static int bitSize[];
+  void refillBits(std::queue<bool> &bits, const std::string &text, int &index);
 };
