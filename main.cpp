@@ -1,5 +1,6 @@
 #include <getopt.h>
 #include <string>
+#include <filesystem>
 #include "image.hpp"
 
 int main(int argc, char *argv[]){
@@ -67,13 +68,18 @@ int main(int argc, char *argv[]){
     std::cerr << "No mode selected. Exiting." << std::endl;
     return 2;
   }
-  if (outputName.empty()) outputName = "mod_" + imageName;
+  if (outputName.empty()){
+    std::filesystem::path save(imageName);
+    outputName = save.parent_path().string() + "/" + save.stem().string() + "_mod" + save.extension().string();
+  }
 
   // Parse image
   ImageStego ciph(imageName);
   if (decode){
+    std::cout << "Decoding image " << imageName << std::endl;
     ciph.decode();
   }else{
+    std::cout << "Encoding image " << imageName << " with text: \"" << textEncode << "\"" << std::endl;
     ciph.encode(textEncode, outputName);
   }
 
