@@ -36,7 +36,7 @@ ImageStego::~ImageStego(){
 }
 
 void ImageStego::encode(const std::string &textEncode, const std::string &outputName){
-  // Initialize a queue to place bits  
+  // Initialize a queue to place bits 
   std::queue<bool> bits;
   int charIndex = 0;
   refillBits(bits, textEncode, charIndex);
@@ -84,13 +84,48 @@ void ImageStego::encode(const std::string &textEncode, const std::string &output
   // Save the image
   if (!FreeImage_Save(filetype, image, outputName.c_str())){
     std::cerr << "Failed to save image: " << outputName << std::endl;
+    exit(4);
   } else {
     std::cout << "Success! Saved image with encoded text to " << outputName << std::endl;
   }
 }
 
 void ImageStego::decode(){
-  
+  // Initialize variables
+  std::queue<bool> bits;
+  std::string text = "";
+  bool finishedDecode = false;
+
+  // Go through every pixel
+  int width = FreeImage_GetWidth(image);
+  int height = FreeImage_GetHeight(image);
+  for (int i = 0; i < width; i++){
+    for (int j = 0; j < height; j++){
+      // Initalize color
+      RGBQUAD color;
+      FreeImage_GetPixelColor(image, i, j, &color);
+      
+      // Start decoding red and green values
+      decodeColors(bits, color.rgbRed, color.rgbGreen);
+
+      // Start decoding green and blue values
+      decodeColors(bits, color.rgbGreen, color.rgbBlue);
+
+      // Extract characters in the queue
+      // Check if null characters are in the string
+      if (!extractChar(bits, text)){
+        finishedDecode = true;
+        break;
+      }
+    }
+    if (finishedDecode) break;
+  }
+  // Print the text
+  if (!finishedDecode){
+    std::cerr << "Unable to decode image." << std::endl;
+  } else {
+    std::cout << "Success! Decoded text: \"" << text << "\"" << std::endl;
+  }
 }
 
 void ImageStego::refillBits(std::queue<bool> &bits, const std::string &text, int &index){
@@ -152,5 +187,44 @@ void ImageStego::encodeColors(bool &encodable, int &diff, int &color1, int &colo
   } else {
     // Do not count red and green if values have the possibility to overflow/overlap
     encodable = false;
+  }
+}
+
+bool ImageStego::extractChar(std::queue<bool> &bits, std::string &text){
+  // Return true if a printable character is found
+  // Return false if null character is found
+  while (bits.size() >= 8){
+    std::bitset<8> character(0);
+    for (int i = 7; i >= 0; i--){
+      if (bits.front()) character.set(i);
+      bits.pop();
+    }
+    unsigned char letter = static_cast<unsigned char>(character.to_ulong());
+    if (letter == '\0') return false;
+    text += letter;
+  }
+  return true;
+}
+
+void ImageStego::decodeColors(std::queue<bool> &bits, const int &color1, const int &color2){
+  // Calculate larger and smaller values of the two colors.
+  int large = (color1 >= color2) ? color1 : color2;
+  int small = (color1 >= color2) ? color2 : color1;
+  // Difference of green and red
+  int diff = large - small;
+  // Get bit sizes of the difference
+  int bitRange = 0;
+  for (int k = 0; k < 7; k++){
+    if (diffRange[k] > diff){
+      bitRange = k-1;
+      break;
+    }
+  }
+  if ((255 - large >= diffRange[bitRange+1] - diffRange[bitRange]) 
+      && (small >= diffRange[bitRange+1] - diffRange[bitRange])){
+    std::bitset<8> diffBits(diff);
+    for (int k = bitSize[bitRange]-1 ; k >= 0; k--){
+      bits.push(diffBits[k]);
+    }
   }
 }
