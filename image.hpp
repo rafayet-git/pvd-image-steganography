@@ -5,6 +5,7 @@
 #include <string>
 #include <queue>
 #include <bitset>
+#include <cmath>
 
 class ImageStego{
 public:
@@ -18,4 +19,5 @@ private:
   const static int diffRange[];
   const static int bitSize[];
   void refillBits(std::queue<bool> &bits, const std::string &text, int &index);
+  void encodeColors(bool &encodable, int &diff, int &color1, int &color2, std::queue<bool> &bits);
 };
