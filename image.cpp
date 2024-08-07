@@ -1,4 +1,5 @@
 #include "image.hpp"
+#include <FreeImage.h>
 
 // Initialize const arrays
 const int ImageStego::diffRange[] = {0,8,16,32,64,128,256};
@@ -20,7 +21,7 @@ ImageStego::ImageStego(const std::string &imageName){
     exit(3);
   }
   FIBITMAP *imagedata = FreeImage_Load(filetype, imageName.c_str());
-  image = FreeImage_ConvertTo32Bits(imagedata);
+  image = FreeImage_ConvertTo24Bits(imagedata);
   FreeImage_Unload(imagedata);
   // Doing this just in case
   if (!image){
@@ -85,9 +86,8 @@ void ImageStego::encode(const std::string &textEncode, const std::string &output
   if (!FreeImage_Save(filetype, image, outputName.c_str())){
     std::cerr << "Failed to save image: " << outputName << std::endl;
     exit(4);
-  } else {
-    std::cout << "Success! Saved image with encoded text to " << outputName << std::endl;
   }
+  std::cout << "Success! Saved image with encoded text to " << outputName << std::endl;
 }
 
 void ImageStego::decode(){
