@@ -54,31 +54,21 @@ void ImageStego::encode(const std::string &textEncode, const std::string &output
       int newGR = color.rgbGreen;
       int newGB = color.rgbGreen;
       int newB = color.rgbBlue;
-      bool oGR = true, oGB = true;
-      int diffGR, diffGB;
 
       // Start encoding red and green
-      encodeColors(oGR, diffGR, newR, newGR, bits);
+      encodeColors(newR, newGR, bits);
       // Refill bits queue
       if (bits.size() < 7) refillBits(bits, textEncode, charIndex);
 
       // Start encoding green and blue
-      encodeColors(oGB, diffGB, newGB, newB, bits);
+      encodeColors(newGB, newB, bits);
       // Refill bits queue
       if (bits.size() < 7) refillBits(bits, textEncode, charIndex);
 
       // Encode values into the pixel
-      if (oGR && oGB){
-        color.rgbGreen = ((newGR + newGB)/2);
-        color.rgbRed = newR - (newGR - color.rgbGreen);
-        color.rgbBlue = newB - (newGB - color.rgbGreen);
-      } else if (oGR){
-        color.rgbRed = newR;
-        color.rgbGreen = newGR;
-      } else if (oGB){
-        color.rgbBlue = newB;
-        color.rgbGreen = newGB;
-      }
+      color.rgbGreen = ((newGR + newGB)/2);
+      color.rgbRed = newR - (newGR - color.rgbGreen);
+      color.rgbBlue = newB - (newGB - color.rgbGreen);
       FreeImage_SetPixelColor(image, i, j, &color);
     }
   }
@@ -144,12 +134,9 @@ void ImageStego::refillBits(std::queue<bool> &bits, const std::string &text, int
   }
 }
 
-void ImageStego::encodeColors(bool &encodable, int &diff, int &color1, int &color2, std::queue<bool> &bits){
-  // Calculate larger and smaller values of the two colors.
-  int large = (color1 >= color2) ? color1 : color2;
-  int small = (color1 >= color2) ? color2 : color1;
+void ImageStego::encodeColors(int &color1, int &color2, std::queue<bool> &bits){
   // Difference of green and red
-  diff = large - small;
+  int diff = std::abs(color1 - color2);
   // Get bit sizes of the difference
   int bitRange = 0;
   for (int k = 0; k < 7; k++){
@@ -158,41 +145,36 @@ void ImageStego::encodeColors(bool &encodable, int &diff, int &color1, int &colo
       break;
     }
   }
-  if ((255 - large >= diffRange[bitRange+1] - diffRange[bitRange]) 
-      && (small >= diffRange[bitRange+1] - diffRange[bitRange])){
-    // Generate new difference value
-    std::bitset<8> newDiff(diffRange[bitRange]);
-    for (int k = bitSize[bitRange]-1; k >= 0; k--){
-      if (bits.front()) newDiff.set(k);
-      bits.pop();
-    }
-    int newDiff_int = static_cast<int>(newDiff.to_ulong());
-    
-    // Get the new red and green values
-    double m = std::abs(newDiff_int - diff);
-    if ((color1 >= color2) && (newDiff_int > diff)){
-      color1 += static_cast<int>(std::ceil(m / 2.0));
-      color2 -= static_cast<int>(std::floor(m / 2.0));
-    } else if ((color1 < color2) && (newDiff_int > diff)){
-      color1 -= static_cast<int>(std::floor(m / 2.0));
-      color2 += static_cast<int>(std::ceil(m / 2.0));
-    } else if ((color1 >= color2) && (newDiff_int <= diff)){
-      color1 -= static_cast<int>(std::ceil(m / 2.0));
-      color2 += static_cast<int>(std::floor(m / 2.0));
-    } else if ((color1 < color2) && (newDiff_int <= diff)){
-      color1 += static_cast<int>(std::ceil(m / 2.0));
-      color2 -= static_cast<int>(std::floor(m / 2.0));
-    }
-    diff = newDiff_int;
-  } else {
-    // Do not count red and green if values have the possibility to overflow/overlap
-    encodable = false;
+  // Generate new difference value
+  std::bitset<8> newDiff(diffRange[bitRange]);
+  for (int k = bitSize[bitRange]-1; k >= 0; k--){
+    if (bits.front()) newDiff.set(k);
+    bits.pop();
   }
+  int newDiff_int = static_cast<int>(newDiff.to_ulong());
+  
+  // Get the new red and green values
+  double m = std::abs(newDiff_int - diff);
+  if ((color1 >= color2) && (newDiff_int > diff)){
+    color1 += static_cast<int>(std::ceil(m / 2.0));
+    color2 -= static_cast<int>(std::floor(m / 2.0));
+  } else if ((color1 < color2) && (newDiff_int > diff)){
+    color1 -= static_cast<int>(std::floor(m / 2.0));
+    color2 += static_cast<int>(std::ceil(m / 2.0));
+  } else if ((color1 >= color2) && (newDiff_int <= diff)){
+    color1 -= static_cast<int>(std::ceil(m / 2.0));
+    color2 += static_cast<int>(std::floor(m / 2.0));
+  } else if ((color1 < color2) && (newDiff_int <= diff)){
+    color1 += static_cast<int>(std::ceil(m / 2.0));
+    color2 -= static_cast<int>(std::floor(m / 2.0));
+  }
+  diff = newDiff_int;
+
 }
 
 bool ImageStego::extractChar(std::queue<bool> &bits, std::string &text){
   // Return true if a printable character is found
-  // Return false if null character is found
+  // Return false if null character is found, indicating end of string
   while (bits.size() >= 8){
     std::bitset<8> character(0);
     for (int i = 7; i >= 0; i--){
@@ -208,10 +190,8 @@ bool ImageStego::extractChar(std::queue<bool> &bits, std::string &text){
 
 void ImageStego::decodeColors(std::queue<bool> &bits, const int &color1, const int &color2){
   // Calculate larger and smaller values of the two colors.
-  int large = (color1 >= color2) ? color1 : color2;
-  int small = (color1 >= color2) ? color2 : color1;
   // Difference of green and red
-  int diff = large - small;
+  int diff = std::abs(color1 - color2);
   // Get bit sizes of the difference
   int bitRange = 0;
   for (int k = 0; k < 7; k++){
@@ -220,11 +200,8 @@ void ImageStego::decodeColors(std::queue<bool> &bits, const int &color1, const i
       break;
     }
   }
-  if ((255 - large >= diffRange[bitRange+1] - diffRange[bitRange]) 
-      && (small >= diffRange[bitRange+1] - diffRange[bitRange])){
-    std::bitset<8> diffBits(diff);
-    for (int k = bitSize[bitRange]-1 ; k >= 0; k--){
-      bits.push(diffBits[k]);
-    }
+  std::bitset<8> diffBits(diff);
+  for (int k = bitSize[bitRange]-1 ; k >= 0; k--){
+    bits.push(diffBits[k]);
   }
 }

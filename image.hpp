@@ -19,7 +19,7 @@ private:
   const static int diffRange[];
   const static int bitSize[];
   void refillBits(std::queue<bool> &bits, const std::string &text, int &index);
-  void encodeColors(bool &encodable, int &diff, int &color1, int &color2, std::queue<bool> &bits);
+  void encodeColors(int &color1, int &color2, std::queue<bool> &bits);
   bool extractChar(std::queue<bool> &bits, std::string &text);
   void decodeColors(std::queue<bool> &bits, const int &color1, const int &color2);
 };
