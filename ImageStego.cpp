@@ -1,4 +1,4 @@
-#include "image.hpp"
+#include "ImageStego.hpp"
 #include <FreeImage.h>
 
 // Initialize const arrays
@@ -38,9 +38,8 @@ ImageStego::~ImageStego(){
 
 void ImageStego::encode(const std::string &textEncode, const std::string &outputName){
   // Initialize a queue to place bits 
-  std::queue<bool> bits;
   int charIndex = 0;
-  refillBits(bits, textEncode, charIndex);
+  refillBits(textEncode, charIndex);
   
   // Go through every pixel
   int width = FreeImage_GetWidth(image);
@@ -56,14 +55,14 @@ void ImageStego::encode(const std::string &textEncode, const std::string &output
       int newB = color.rgbBlue;
 
       // Start encoding red and green
-      encodeColors(newR, newGR, bits);
+      encodeColors(newR, newGR);
       // Refill bits queue
-      if (bits.size() < 7) refillBits(bits, textEncode, charIndex);
+      if (bits.size() < 7) refillBits(textEncode, charIndex);
 
       // Start encoding green and blue
-      encodeColors(newGB, newB, bits);
+      encodeColors(newGB, newB);
       // Refill bits queue
-      if (bits.size() < 7) refillBits(bits, textEncode, charIndex);
+      if (bits.size() < 7) refillBits(textEncode, charIndex);
 
       // Encode values into the pixel
       color.rgbGreen = ((newGR + newGB)/2);
@@ -76,6 +75,7 @@ void ImageStego::encode(const std::string &textEncode, const std::string &output
   if (!FreeImage_Save(filetype, image, outputName.c_str())){
     // Convert to 24 bit
     FIBITMAP *noalpha = FreeImage_ConvertTo24Bits(image);
+    // Future idea: Optimize by hard-coding filetypes, especially in initializer
     if (!FreeImage_Save(filetype, noalpha, outputName.c_str())){
       std::cerr << "Failed to save image: " << outputName << std::endl;
       FreeImage_Unload(noalpha);
@@ -88,7 +88,6 @@ void ImageStego::encode(const std::string &textEncode, const std::string &output
 
 void ImageStego::decode(){
   // Initialize variables
-  std::queue<bool> bits;
   std::string text = "";
   bool finishedDecode = false;
 
@@ -102,14 +101,14 @@ void ImageStego::decode(){
       FreeImage_GetPixelColor(image, i, j, &color);
       
       // Start decoding red and green values
-      decodeColors(bits, color.rgbRed, color.rgbGreen);
+      decodeColors(color.rgbRed, color.rgbGreen);
 
       // Start decoding green and blue values
-      decodeColors(bits, color.rgbGreen, color.rgbBlue);
+      decodeColors(color.rgbGreen, color.rgbBlue);
 
       // Extract characters in the queue
       // Check if null characters are in the string
-      if (!extractChar(bits, text)){
+      if (!extractChar(text)){
         finishedDecode = true;
         break;
       }
@@ -124,7 +123,7 @@ void ImageStego::decode(){
   }
 }
 
-void ImageStego::refillBits(std::queue<bool> &bits, const std::string &text, int &index){
+void ImageStego::refillBits(const std::string &text, int &index){
   // Call this function whenever there is less than 8 bits in the queue
   // For characters: go from bitset 7 to 0
   if (index < text.size()){
@@ -140,7 +139,7 @@ void ImageStego::refillBits(std::queue<bool> &bits, const std::string &text, int
   }
 }
 
-void ImageStego::encodeColors(int &color1, int &color2, std::queue<bool> &bits){
+void ImageStego::encodeColors(int &color1, int &color2){
   // Difference of green and red
   int diff = std::abs(color1 - color2);
   // Get bit sizes of the difference
@@ -151,6 +150,7 @@ void ImageStego::encodeColors(int &color1, int &color2, std::queue<bool> &bits){
       break;
     }
   }
+  // if ((255 - large >= diffRange[bitRange+1] - diffRange[bitRange]) && (small >= diffRange[bitRange+1] - diffRange[bitRange])){
   // Generate new difference value
   std::bitset<8> newDiff(diffRange[bitRange]);
   for (int k = bitSize[bitRange]-1; k >= 0; k--){
@@ -178,7 +178,7 @@ void ImageStego::encodeColors(int &color1, int &color2, std::queue<bool> &bits){
 
 }
 
-bool ImageStego::extractChar(std::queue<bool> &bits, std::string &text){
+bool ImageStego::extractChar(std::string &text){
   // Return true if a printable character is found
   // Return false if null character is found, indicating end of string
   while (bits.size() >= 8){
@@ -194,7 +194,7 @@ bool ImageStego::extractChar(std::queue<bool> &bits, std::string &text){
   return true;
 }
 
-void ImageStego::decodeColors(std::queue<bool> &bits, const int &color1, const int &color2){
+void ImageStego::decodeColors(const int &color1, const int &color2){  
   // Calculate larger and smaller values of the two colors.
   // Difference of green and red
   int diff = std::abs(color1 - color2);
