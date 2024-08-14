@@ -21,7 +21,7 @@ ImageStego::ImageStego(const std::string &imageName){
     exit(3);
   }
   FIBITMAP *imagedata = FreeImage_Load(filetype, imageName.c_str());
-  image = FreeImage_ConvertTo24Bits(imagedata);
+  image = FreeImage_ConvertTo32Bits(imagedata);
   FreeImage_Unload(imagedata);
   // Doing this just in case
   if (!image){
@@ -74,8 +74,14 @@ void ImageStego::encode(const std::string &textEncode, const std::string &output
   }
   // Save the image
   if (!FreeImage_Save(filetype, image, outputName.c_str())){
-    std::cerr << "Failed to save image: " << outputName << std::endl;
-    exit(4);
+    // Convert to 24 bit
+    FIBITMAP *noalpha = FreeImage_ConvertTo24Bits(image);
+    if (!FreeImage_Save(filetype, noalpha, outputName.c_str())){
+      std::cerr << "Failed to save image: " << outputName << std::endl;
+      FreeImage_Unload(noalpha);
+      exit(4);
+    }
+    FreeImage_Unload(noalpha);
   }
   std::cout << "Success! Saved image with encoded text to " << outputName << std::endl;
 }
