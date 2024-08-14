@@ -1,7 +1,7 @@
 #include <getopt.h>
 #include <string>
 #include <filesystem>
-#include "image.hpp"
+#include "ImageStego.hpp"
 
 int main(int argc, char *argv[]){
   // Options
