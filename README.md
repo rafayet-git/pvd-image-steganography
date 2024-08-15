@@ -10,6 +10,8 @@ This program uses a Pixel Value Differencing (PVD) method for encoding, where in
 
 We do this by encoding the difference of red and green, then the difference of green and red. We then get the new RGB values by taking the average of the two green values and adjusting the red and blue values using our new difference values.
 
+Also, depending on how large the difference is, we can embed more bits while maintaining quality.
+
 I used [this research paper](https://doi.org/10.1098/rsos.161066) as my main reference, but with a couple of tweaks.
 
 ## Build instructions
