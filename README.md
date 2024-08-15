@@ -1,4 +1,4 @@
-# LSB + PVD Image Steganography
+# PVD (+ LSB) Image Steganography
 
 An image steganography program that will allow you to encode and decode images with any text!
 
