@@ -36,7 +36,7 @@ ImageStego::~ImageStego(){
   FreeImage_DeInitialise();
 }
 
-void ImageStego::encode(const std::string &textEncode, const std::string &outputName){
+void ImageStego::encode(const std::string &textEncode, std::filesystem::path &outputName){
   // Initialize a queue to place bits 
   int charIndex = 0;
   refillBits(textEncode, charIndex);
@@ -71,6 +71,26 @@ void ImageStego::encode(const std::string &textEncode, const std::string &output
       FreeImage_SetPixelColor(image, i, j, &color);
     }
   }
+  
+  // Check if the file type is lossy
+  bool ifLossy = false;
+  switch (filetype){
+    case FIF_JPEG:
+    case FIF_JNG:
+    case FIF_J2K:
+    case FIF_JP2:
+      ifLossy = true;
+      break;
+    default:
+      ifLossy = false;
+  }
+  if (ifLossy){
+    // Convert to png
+    std::cout << "Converting image to PNG" << std::endl;
+    outputName.replace_extension(".png");
+    filetype = FIF_PNG;
+  }
+
   // Save the image
   if (!FreeImage_Save(filetype, image, outputName.c_str())){
     // Convert to 24 bit

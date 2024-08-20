@@ -1,6 +1,7 @@
 #pragma once
 
 #include <FreeImage.h>
+#include <filesystem>
 #include <iostream>
 #include <string>
 #include <queue>
@@ -31,7 +32,7 @@ public:
   * @param outputName The output location of the resulting image
   * @post Saves the image with encoded text to outputName
   */
-  void encode(const std::string &textEncode,const std::string &outputName);
+  void encode(const std::string &textEncode, std::filesystem::path &outputName);
   
   /**
   * @brief Function to decode image.

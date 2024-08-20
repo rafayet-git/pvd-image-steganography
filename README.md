@@ -60,6 +60,4 @@ And to decode:
 
 1. Proper pixel overflow handling, as it seems to cause issues when using very long messages, especially with bird.png.
 
-2. Better handling of lossy file formats. Possibly by converting to png?
-
-3. Encryption of some kind
+2. Encryption of some kind
