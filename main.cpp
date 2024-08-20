@@ -7,7 +7,7 @@ int main(int argc, char *argv[]){
   // Options
   std::string imageName; // Name or location of image (--image)
   std::string textEncode; // Text to encode (--encode)
-  std::string outputName; // Text to save file as (--output, default = imageName_mod.*)
+  std::filesystem::path outputName; // Text to save file as (--output, default = imageName_mod.*)
   bool decode = false; // Option to decode text
   
   // Getopt long options
@@ -69,8 +69,8 @@ int main(int argc, char *argv[]){
     return 2;
   }
   if (outputName.empty()){
-    std::filesystem::path save(imageName);
-    outputName = save.parent_path().string() + "/" + save.stem().string() + "_mod" + save.extension().string();
+    outputName = imageName;
+    outputName.replace_filename(outputName.stem().string() + "_mod" + outputName.extension().string());
   }
 
   // Parse image
