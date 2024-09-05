@@ -12,7 +12,7 @@ int main(int argc, char *argv[]){
   
   // Getopt long options
   static struct option long_options[] = {
-    {"image", required_argument, 0, 'i'},
+    {"input", required_argument, 0, 'i'},
     {"output", required_argument, 0, 'o'},
     {"encode", required_argument, 0, 'e'},
     {"decode", no_argument, 0, 'd'},
@@ -49,14 +49,30 @@ int main(int argc, char *argv[]){
       case '?':
       default:
         std::cout << 
-          "Usage:\n"
-          "[-i|--image <filename>]:   Image file to process.\n"
-          "[-o|--output <filename>]:  Image location to write to. (optional)\n"
-          "[-e|--encode <text>]:      Set encode mode and text\n"
-          "[-d|--decode]:             Set decode mode\n"
-          "[-h|--help]:               Show program options and help" << std::endl;
+          "Usage: imgstego -i|--input <filename> [options]\n"
+          "Options:\n"
+          "\t-o|--output <filename>  Specify output image file (optional)\n"
+          "\t-e|--encode <text>      Encode the image with provided text\n"
+          "\t-d|--decode             Decode the image and display text\n"
+          "\t-h|--help               Display program options" << std::endl;
         return 1;
     }
+  }
+  
+  // Parse default/ floating arguments, mainly the input file and textEncode
+  // I did this to make it slightly easier when encoding en masse
+  int i = optind;
+  if(i > 0) {
+    if(i < argc && imageName.empty())
+	    imageName = argv[i++];
+    if(i < argc && textEncode.empty() && !decode)
+	    textEncode = argv[i++];
+    if(i < argc && outputName.empty())
+      outputName = argv[i++];
+    if(i < argc)
+	    while(i<argc) {
+        std::cout << "Invalid option -- " << argv[i++] << std::endl;
+	    }
   }
 
   // Check for invalid input

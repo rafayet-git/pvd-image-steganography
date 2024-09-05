@@ -31,24 +31,24 @@ make
 Run `./imgstego -h`  or `--help` for usage instructions
 
 ```
-Usage:
-[-i|--image <filename>]:   Image file to process.
-[-o|--output <filename>]:  Image location to write to. (optional)
-[-e|--encode <text>]:      Set encode mode and text
-[-d|--decode]:             Set decode mode
-[-h|--help]:               Show program options and help
+Usage: imgstego -i|--input <filename> [options]
+Options:
+        -o|--output <filename>  Specify output image file (optional)
+        -e|--encode <text>      Encode the image with provided text
+        -d|--decode             Decode the image and display text
+        -h|--help               Display program options
 ```
 
 For example, to encode an image with a text, use this command:
 
 ```
-./imgstego --image filename.png -o encoded.png --encode "Hello there"
+./imgstego --input filename.png -o encoded.png --encode "Hello there"
 ```
 
 And to decode:
 
 ```
-./imgstego --image encoded.png --decode
+./imgstego --input encoded.png --decode
 ```
 
 > [!WARNING]
