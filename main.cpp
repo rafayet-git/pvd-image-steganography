@@ -64,15 +64,16 @@ int main(int argc, char *argv[]){
   int i = optind;
   if(i > 0) {
     if(i < argc && imageName.empty())
-	    imageName = argv[i++];
-    if(i < argc && textEncode.empty() && !decode)
-	    textEncode = argv[i++];
+      imageName = argv[i++];
+    if(i < argc && textEncode.empty() && !decode) 
+      textEncode = argv[i++];
     if(i < argc && outputName.empty())
       outputName = argv[i++];
-    if(i < argc)
-	    while(i<argc) {
+    if(i < argc){
+      while(i<argc) {
         std::cout << "Invalid option -- " << argv[i++] << std::endl;
-	    }
+      }
+    }
   }
 
   // Check for invalid input
