@@ -67,12 +67,20 @@ void ImageStego::encode(const std::string &textEncode, std::filesystem::path &ou
       // Encode values into the pixel
       int origR = color.rgbRed;
       int origG = color.rgbGreen;
+      int origB = color.rgbBlue;
+      int colorGreen = ((newGR + newGB)/2);
+      int colorRed = newR - (newGR - colorGreen);
+      int colorBlue = newB - (newGB - colorGreen);
       color.rgbGreen = ((newGR + newGB)/2);
       color.rgbRed = newR - (newGR - color.rgbGreen);
+      color.rgbBlue = newB - (newGB - color.rgbGreen);
+      // 0 - (16-15)
       if (color.rgbRed > 253){
-        std::cout << (int)color.rgbGreen << ',' << (int)color.rgbRed << ',' << newGR << ',' << origG <<',' << origR << std::endl;
+        // std::cout << "New colors: " <<(int)color.rgbRed<< ',' << (int)color.rgbGreen << ',' << (int)color.rgbBlue
+        std::cout << "New colors: " <<colorRed<< ',' << colorGreen << ',' << colorBlue
+          << " New color intervals: " << newR << ','<< newGR << ',' << newGB << ',' << newB
+          << " Original colors: " << origR <<',' << origG << ',' << origB << std::endl;
       }
-      //color.rgbBlue = newB - (newGB - color.rgbGreen);
       FreeImage_SetPixelColor(image, i, j, &color);
     }
   }
