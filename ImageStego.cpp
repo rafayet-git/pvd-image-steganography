@@ -75,7 +75,7 @@ void ImageStego::encode(const std::string &textEncode, std::filesystem::path &ou
       color.rgbRed = newR - (newGR - color.rgbGreen);
       color.rgbBlue = newB - (newGB - color.rgbGreen);
       // 0 - (16-15)
-      if (color.rgbRed > 253){
+      if (colorRed < 0 || colorGreen < 0 || colorBlue < 0){
         // std::cout << "New colors: " <<(int)color.rgbRed<< ',' << (int)color.rgbGreen << ',' << (int)color.rgbBlue
         std::cout << "New colors: " <<colorRed<< ',' << colorGreen << ',' << colorBlue
           << " New color intervals: " << newR << ','<< newGR << ',' << newGB << ',' << newB
