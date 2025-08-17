@@ -2,7 +2,7 @@
 
 An image steganography program that will allow you to encode and decode images with any text!
 
-Written in C++ using the FreeImage library
+Written in C++ using the OpenCV library
 
 ## How it works
 
@@ -16,14 +16,14 @@ I used [this research paper](https://doi.org/10.1098/rsos.161066) as my main ref
 
 ## Build instructions
 
-Make sure you have Make and FreeImage installed.
+Make sure you have Make and OpenCV installed.
 
 Run these commands:
 
 ```
-git clone https://github.com/UTkbxRME7c9C/lsb-pvd-image-steganography.git
-cd lsb-pvd-image-steganography/
-make
+git clone https://github.com/rafayet-git/pvd-image-steganography.git
+cd pvd-image-steganography/
+make compile
 ```
 
 ## Usage instructions

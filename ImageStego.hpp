@@ -1,10 +1,12 @@
 #pragma once
 
-#include <FreeImage.h>
+#include <opencv2/opencv.hpp>
 #include <filesystem>
+#include <algorithm>
 #include <iostream>
 #include <string>
 #include <queue>
+#include <unordered_set>
 #include <bitset>
 #include <cmath>
 
@@ -17,13 +19,6 @@ public:
   * @post Create an object ImageStego containing the bitmap of the image.
   */
   ImageStego(const std::string &imageName);
-  
-  /**
-  * @brief Deconstructor for the ImageStego class.
-  *
-  * @post Deinitalize FreeImage and the image bitmap.
-  */
-  ~ImageStego();
   
   /** 
   * @brief Function to encode image.
@@ -41,10 +36,10 @@ public:
   */
   void decode();
 private:
-  // FreeImage bitmap of the image
-  FIBITMAP *image;
-  // Filetype of the image, needed for saving
-  FREE_IMAGE_FORMAT filetype;
+  // Object bitmap to store the image
+  cv::Mat image;
+  // Original number of channels (to preserve output format)
+  int origChannels;
   // Ranges of the pixel differences: 0, 8, 16, 32, 64, 128, 256
   const static int diffRange[];
   // Size of bits that can be encoded: 3, 3, 4, 5, 6, 7

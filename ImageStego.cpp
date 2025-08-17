@@ -1,39 +1,31 @@
 #include "ImageStego.hpp"
-#include <FreeImage.h>
 
 // Initialize const arrays
 const int ImageStego::diffRange[] = {0,8,16,32,64,128,256};
 const int ImageStego::bitSize[] = {3,3,4,5,6,7};
 
 ImageStego::ImageStego(const std::string &imageName){
-  // Initialize library
-  FreeImage_Initialise();
-  filetype = FreeImage_GetFileType(imageName.c_str());
-  // Check if the file exists and can be processed
-  if (filetype == FIF_UNKNOWN){
-    filetype = FreeImage_GetFIFFromFilename(imageName.c_str());
-  }
-  // FIF_UNKNOWN implies file access issues
-  // Also do not accept readonly filetypes, as we need it to save the image
-  if (filetype == FIF_UNKNOWN || !FreeImage_FIFSupportsReading(filetype) || !FreeImage_FIFSupportsWriting(filetype)){
+  
+  // Load image
+  image = cv::imread(imageName, cv::IMREAD_UNCHANGED);
+  
+  // Check if the image was loaded successfully
+  if (image.empty()) {
     std::cerr << "Unable to access file, or incompatible filetype provided. Exiting." << std::endl;
-    FreeImage_DeInitialise();
     exit(3);
   }
-  FIBITMAP *imagedata = FreeImage_Load(filetype, imageName.c_str());
-  image = FreeImage_ConvertTo32Bits(imagedata);
-  FreeImage_Unload(imagedata);
-  // Doing this just in case
-  if (!image){
-    std::cerr << "Unable to access file. Exiting." << std::endl;
-    this->~ImageStego();
-    exit(3);
+  
+  // Store original channel count for format preservation
+  origChannels = image.channels();
+  
+  // Convert to 4-channel BGRA for consistent processing and alpha preservation
+  if (origChannels == 3) {
+    // BGR/RGB -> BGRA 
+    cv::cvtColor(image, image, cv::COLOR_BGR2BGRA);
+  } else if (origChannels == 1) {
+    // Grayscale -> BGRA
+    cv::cvtColor(image, image, cv::COLOR_GRAY2BGRA);
   }
-}
-
-ImageStego::~ImageStego(){
-  FreeImage_Unload(image);
-  FreeImage_DeInitialise();
 }
 
 void ImageStego::encode(const std::string &textEncode, std::filesystem::path &outputName){
@@ -42,17 +34,16 @@ void ImageStego::encode(const std::string &textEncode, std::filesystem::path &ou
   refillBits(textEncode, charIndex);
   
   // Go through every pixel
-  int width = FreeImage_GetWidth(image);
-  int height = FreeImage_GetHeight(image);
+  int width = image.cols;
+  int height = image.rows;
   for (int i = 0; i < width; i++){
     for (int j = 0; j < height; j++){
-      // Initalize color
-      RGBQUAD color;
-      FreeImage_GetPixelColor(image, i, j, &color);
-      int newR = color.rgbRed;
-      int newGR = color.rgbGreen;
-      int newGB = color.rgbGreen;
-      int newB = color.rgbBlue;
+      // Initialize color
+      cv::Vec4b& pixel = image.at<cv::Vec4b>(j, i);
+      int newB = pixel[0];
+      int newGR = pixel[1];
+      int newGB = pixel[1];
+      int newR = pixel[2];
 
       // Start encoding red and green
       encodeColors(newR, newGR);
@@ -80,44 +71,45 @@ void ImageStego::encode(const std::string &textEncode, std::filesystem::path &ou
         colorBlue = 0;
       }
 
-      color.rgbGreen = colorGreen; 
-      color.rgbRed = colorRed;
-      color.rgbBlue = colorBlue;
+      // Clamp values to 0-255 range (code should have already accounted for this, but included just incase)
+      colorRed = std::min(255, std::max(0, colorRed));
+      colorGreen = std::min(255, std::max(0, colorGreen));
+      colorBlue = std::min(255, std::max(0, colorBlue));
 
-      FreeImage_SetPixelColor(image, i, j, &color);
+      // Set new values
+      pixel[0] = static_cast<uchar>(colorBlue);
+      pixel[1] = static_cast<uchar>(colorGreen);
+      pixel[2] = static_cast<uchar>(colorRed);
     }
   }
   
   // Check if the file type is lossy
-  bool ifLossy = false;
-  switch (filetype){
-    case FIF_JPEG:
-    case FIF_JNG:
-    case FIF_J2K:
-    case FIF_JP2:
-      ifLossy = true;
-      break;
-    default:
-      ifLossy = false;
-  }
+  std::string extension = outputName.extension().string();
+  std::ranges::transform(extension, extension.begin(), ::tolower);  
+  
+  static const std::unordered_set<std::string> lossyFormats = {
+    ".jpg", ".jpeg", ".j2k", ".jp2"
+  };
+  bool ifLossy = lossyFormats.count(extension) > 0;
+
   if (ifLossy){
     // Convert to png
     std::cout << "Converting image to PNG" << std::endl;
     outputName.replace_extension(".png");
-    filetype = FIF_PNG;
   }
 
   // Save the image
-  if (!FreeImage_Save(filetype, image, outputName.c_str())){
-    // Convert to 24 bit
-    FIBITMAP *noalpha = FreeImage_ConvertTo24Bits(image);
-    // Future idea: Optimize by hard-coding filetypes, especially in initializer
-    if (!FreeImage_Save(filetype, noalpha, outputName.c_str())){
-      std::cerr << "Failed to save image: " << outputName << std::endl;
-      FreeImage_Unload(noalpha);
-      exit(4);
-    }
-    FreeImage_Unload(noalpha);
+  cv::Mat outputImage;
+  if (origChannels == 3) {
+    // Convert BGRA back to BGR (remove alpha channel)
+    cv::cvtColor(image, outputImage, cv::COLOR_BGRA2BGR);
+  } else {
+    outputImage = image;
+  }
+
+  if (!cv::imwrite(outputName.string(), outputImage)){
+    std::cerr << "Failed to save image: " << outputName << std::endl;
+    exit(4);
   }
   std::cout << "Success! Saved image with encoded text to " << outputName << std::endl;
 }
@@ -128,19 +120,21 @@ void ImageStego::decode(){
   bool finishedDecode = false;
 
   // Go through every pixel
-  int width = FreeImage_GetWidth(image);
-  int height = FreeImage_GetHeight(image);
+  int width = image.cols;
+  int height = image.rows;
   for (int i = 0; i < width; i++){
     for (int j = 0; j < height; j++){
-      // Initalize color
-      RGBQUAD color;
-      FreeImage_GetPixelColor(image, i, j, &color);
+      // Initialize color
+      cv::Vec4b pixel = image.at<cv::Vec4b>(j, i);
+      int blue = pixel[0];
+      int green = pixel[1];
+      int red = pixel[2];
       
       // Start decoding red and green values
-      decodeColors(color.rgbRed, color.rgbGreen);
+      decodeColors(red, green);
 
       // Start decoding green and blue values
-      decodeColors(color.rgbGreen, color.rgbBlue);
+      decodeColors(green, blue);
 
       // Extract characters in the queue
       // Check if null characters are in the string
