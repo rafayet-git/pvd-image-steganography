@@ -70,7 +70,7 @@ int main(int argc, char *argv[]){
     if(i < argc && outputName.empty())
       outputName = argv[i++];
     if(i < argc){
-      while(i<argc) {
+      while (i < argc) {
         std::cout << "Invalid option -- " << argv[i++] << std::endl;
       }
     }
@@ -95,11 +95,10 @@ int main(int argc, char *argv[]){
   if (decode){
     std::cout << "Decoding image " << imageName << std::endl;
     ciph.decode();
-  }else{
+  } else {
     std::cout << "Encoding image " << imageName << " with text: \"" << textEncode << "\"" << std::endl;
     ciph.encode(textEncode, outputName);
   }
-
 
   return 0;
 }

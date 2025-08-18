@@ -5,7 +5,8 @@ const int ImageStego::diffRange[] = {0,8,16,32,64,128,256};
 const int ImageStego::bitSize[] = {3,3,4,5,6,7};
 
 ImageStego::ImageStego(const std::string &imageName){
-  
+  cv::utils::logging::setLogLevel(cv::utils::logging::LOG_LEVEL_ERROR);
+
   // Load image
   image = cv::imread(imageName, cv::IMREAD_UNCHANGED);
   
@@ -162,7 +163,7 @@ void ImageStego::refillBits(const std::string &text, int &index){
       bits.push(bitsChar[i]);
     }
     index++;
-  }else{
+  } else {
     for (int i = 0; i < 8; i++){
       bits.push(0);
     }
